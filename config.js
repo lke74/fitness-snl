@@ -14,6 +14,6 @@
 
 window.ADMIN_CONFIG = {
   username: 'GFC-Admin',
-  // SHA-256 hash of "fitness2024"  — change this after first login!
+  // SHA-256 hash of "RecCentre2433!"
   passwordHash: '7584d3d6d0d38e36971a8b3954302f2546d5f3812eca072e2167b7fb3be1934a'
 };
