@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Login — Fitness Snakes &amp; Ladders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #e8541a; --orange-d: #c94e1e; --orange-l: #fff3ee;
+  --bg: #fffcf9; --bg2: #f5f0ea; --border: rgba(0,0,0,0.1);
+  --text: #1c1917; --text2: #78716c; --card: #ffffff; --red: #dc2626;
+}
+body { font-family: 'Nunito', sans-serif; background: linear-gradient(145deg,#fff8f4 0%,#fef3e8 50%,#f0fdf4 100%); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.card { background: var(--card); border-radius: 20px; padding: 48px 40px; max-width: 400px; width: 100%; box-shadow: 0 4px 40px rgba(232,84,26,0.1), 0 1px 4px rgba(0,0,0,0.06); }
+.logo { text-align: center; margin-bottom: 28px; }
+.logo-emoji { font-size: 52px; line-height: 1; display: block; margin-bottom: 12px; }
+.logo h1 { font-family: 'DM Serif Display', serif; font-size: 26px; margin-bottom: 4px; }
+.logo p { font-size: 13px; color: var(--text2); font-weight: 600; }
+.admin-badge { display: inline-block; padding: 3px 12px; background: var(--orange-l); color: var(--orange-d); border-radius: 20px; font-size: 12px; font-weight: 800; margin-bottom: 24px; }
+label { font-size: 12px; font-weight: 800; color: var(--text2); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
+input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text); font-size: 14px; font-weight: 600;
+  font-family: 'Nunito', sans-serif; outline: none; transition: border-color 0.2s; margin-bottom: 14px;
+}
+input:focus { border-color: var(--orange); }
+.btn {
+  width: 100%; padding: 13px; background: var(--orange); color: #fff;
+  border: none; border-radius: 10px; font-size: 15px; font-weight: 800;
+  font-family: 'Nunito', sans-serif; cursor: pointer; transition: background 0.2s;
+}
+.btn:hover { background: var(--orange-d); }
+.error { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; border-radius: 8px; padding: 10px 14px; font-size: 13px; font-weight: 700; margin-bottom: 14px; display: none; }
+.back-link { display: block; text-align: center; margin-top: 18px; font-size: 13px; color: var(--text2); font-weight: 700; text-decoration: none; }
+.back-link:hover { color: var(--orange); }
+.hint { font-size: 12px; color: var(--text2); text-align: center; margin-top: 12px; font-weight: 600; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span class="logo-emoji">🐍🪜</span>
+    <h1>Snakes &amp; Ladders</h1>
+    <p>Group Fitness Challenge</p>
+  </div>
+  <div style="text-align:center;margin-bottom:20px;">
+    <span class="admin-badge">⚙️ Admin Access</span>
+  </div>
+  <div id="errorMsg" class="error"></div>
+  <label>Username</label>
+  <input type="text" id="username" placeholder="admin" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('password').focus()">
+  <label>Password</label>
+  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <button class="btn" onclick="doLogin()">Sign in to Admin</button>
+  <p class="hint">Default credentials:<br><strong>username:</strong> admin &nbsp;·&nbsp; <strong>password:</strong> fitness2024<br>Change these in config.js after setup.</p>
+  <a class="back-link" href="index.html">← Back to live board</a>
+</div>
+
+<script>
+// Credentials are stored in config.js which you edit directly.
+// In a real deployment, use GitHub secrets + a backend.
+// For GitHub Pages (static), this is client-side auth guarding the UI only.
+// The game data file is the protected resource.
+
+async function loadConfig() {
+  try {
+    const res = await fetch('config.js?t=' + Date.now());
+    const text = await res.text();
+    // Parse: window.ADMIN_CONFIG = { username: '...', passwordHash: '...' };
+    const match = text.match(/username:\s*['"]([^'"]+)['"]/);
+    const matchH = text.match(/passwordHash:\s*['"]([^'"]+)['"]/);
+    return { username: match?.[1] || 'admin', passwordHash: matchH?.[1] || '' };
+  } catch(e) { return { username: 'admin', passwordHash: '' }; }
+}
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('errorMsg');
+  errEl.style.display = 'none';
+
+  if (!username || !password) {
+    errEl.textContent = 'Please enter username and password.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const config = await loadConfig();
+  const inputHash = await sha256(password);
+
+  // If no hash set yet, accept default
+  const validPassword = config.passwordHash
+    ? inputHash === config.passwordHash
+    : (password === 'fitness2024');
+
+  if (username === config.username && validPassword) {
+    // Store session token (hashed username+password+date)
+    const token = await sha256(username + password + new Date().toDateString());
+    sessionStorage.setItem('snl_admin_token', token);
+    sessionStorage.setItem('snl_admin_token_check', token);
+    window.location.href = 'admin-dashboard.html';
+  } else {
+    errEl.textContent = 'Incorrect username or password.';
+    errEl.style.display = 'block';
+    document.getElementById('password').value = '';
+    document.getElementById('password').focus();
+  }
+}
+</script>
+</body>
+</html>

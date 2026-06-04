@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Snakes &amp; Ladders — Live Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #e8541a;
+  --orange-d: #c94e1e;
+  --orange-l: #fff3ee;
+  --green: #15803d;
+  --green-l: #f0fdf4;
+  --red: #dc2626;
+  --red-l: #fef2f2;
+  --blue: #1d4ed8;
+  --blue-l: #eff6ff;
+  --gold: #d97706;
+  --bg: #fffcf9;
+  --bg2: #f5f0ea;
+  --border: rgba(0,0,0,0.09);
+  --text: #1c1917;
+  --text2: #78716c;
+  --card: #ffffff;
+  --r: 14px;
+}
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* TOP BAR */
+.topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 58px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-logo { font-size: 26px; }
+.topbar-title { font-family: 'DM Serif Display', serif; font-size: 20px; flex: 1; }
+.topbar-sub { font-size: 12px; color: var(--text2); font-weight: 600; }
+.live-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; background: var(--green-l); color: var(--green);
+  border-radius: 20px; font-size: 12px; font-weight: 700;
+}
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+.topbar-btn {
+  padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: 'Nunito', sans-serif; color: var(--text2); transition: all 0.15s; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;
+}
+.topbar-btn:hover { background: var(--bg2); color: var(--text); }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* LAYOUT */
+.layout { display: grid; grid-template-columns: 1fr 280px; gap: 20px; padding: 24px; max-width: 1060px; margin: 0 auto; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; padding: 16px; } }
+
+/* CARDS */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; margin-bottom: 16px; }
+.card:last-child { margin-bottom: 0; }
+.card-title { font-size: 13px; font-weight: 800; margin-bottom: 14px; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 7px; }
+
+/* BOARD */
+#boardCanvas { width: 100%; display: block; border-radius: 10px; background: #fff; }
+.board-wrap { position: relative; }
+
+/* LEADERBOARD */
+.lb-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: none; }
+.rank { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0; }
+.r1 { background: #fbbf24; color: #78350f; }
+.r2 { background: #94a3b8; color: #1e293b; }
+.r3 { background: #c97c3a; color: #fff; }
+.r-n { background: var(--bg2); color: var(--text2); }
+.pdot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.lb-name { flex: 1; font-size: 14px; font-weight: 700; }
+.lb-detail { font-size: 11px; color: var(--text2); font-weight: 600; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.b-orange { background: var(--orange-l); color: var(--orange-d); }
+.b-blue { background: var(--blue-l); color: var(--blue); }
+.b-green { background: var(--green-l); color: var(--green); }
+.b-gray { background: var(--bg2); color: var(--text2); }
+
+/* SNL */
+.snl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.snl-chip { display: flex; align-items: center; gap: 5px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; font-weight: 700; }
+
+/* ROLL HISTORY */
+.roll-entry { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.roll-entry:last-child { border-bottom: none; }
+.roll-week { font-size: 12px; font-weight: 800; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+.roll-dice { font-size: 18px; margin: 4px 0; }
+.roll-moves { font-size: 12px; color: var(--text2); font-weight: 600; line-height: 1.6; }
+
+/* EMPTY STATE */
+.empty { text-align: center; padding: 40px 20px; color: var(--text2); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty p { font-size: 14px; font-weight: 600; }
+
+/* STATUS */
+#statusBar { font-size: 12px; color: var(--text2); font-weight: 600; }
+.last-updated { font-size: 11px; color: var(--text2); font-weight: 600; margin-top: 6px; }
+
+/* PROGRESS BAR */
+.prog-wrap { height: 6px; background: var(--bg2); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.prog-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">🐍🪜</span>
+  <div>
+    <div class="topbar-title">Fitness Snakes &amp; Ladders</div>
+    <div class="topbar-sub">Group Fitness Challenge</div>
+  </div>
+  <div class="live-pill"><span class="live-dot"></span> Live board</div>
+  <div id="spinnerWrap" style="display:none;"><div class="spinner"></div></div>
+  <span id="statusBar"></span>
+  <button class="topbar-btn" onclick="loadData()">↻ Refresh</button>
+  <a class="topbar-btn" href="admin-login.html">⚙️ Admin</a>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <div class="card-title">🗺️ Live board</div>
+      <div class="board-wrap">
+        <canvas id="boardCanvas" width="560" height="560"></canvas>
+      </div>
+      <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📜 Recent rolls</div>
+      <div id="rollHistory"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">🏆 Leaderboard</div>
+      <div id="leaderboard"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">❓ How it works</div>
+      <div style="font-size:13px; color:var(--text2); font-weight:600; line-height:1.7;">
+        <p style="margin-bottom:8px;">🏋️ Attend fitness classes each week to earn points.</p>
+        <p style="margin-bottom:8px;">🎲 Each week the dice are rolled — your points this week determine how far your token moves.</p>
+        <p style="margin-bottom:8px;">🪜 Land on a ladder bottom and climb up! 🐍 Land on a snake head and slide down.</p>
+        <p>🏆 First to square 100 wins!</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🐍🪜 Snakes &amp; ladders</div>
+      <div class="snl-grid" id="snlDisplay"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+let state = { players:[], classes:[], attendance:[], rolls:[], snl:{}, lastUpdated:'' };
+
+function setStatus(msg) {
+  document.getElementById('statusBar').textContent = msg;
+  if (msg) setTimeout(() => { document.getElementById('statusBar').textContent = ''; }, 3000);
+}
+function showSpinner(v) { document.getElementById('spinnerWrap').style.display = v ? 'block' : 'none'; }
+
+async function loadData() {
+  showSpinner(true);
+  try {
+    const res = await fetch('gamestate.json?t=' + Date.now());
+    if (!res.ok) throw new Error('Failed to load');
+    state = await res.json();
+    renderAll();
+    setStatus('Updated');
+  } catch(e) {
+    setStatus('Could not load data');
+  }
+  showSpinner(false);
+}
+
+function renderAll() {
+  renderLeaderboard();
+  renderSnLDisplay();
+  renderRollHistory();
+  drawBoard();
+  if (state.lastUpdated) {
+    document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date(state.lastUpdated).toLocaleString();
+  }
+}
+
+function renderLeaderboard() {
+  const el = document.getElementById('leaderboard');
+  if (!state.players.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><p>No players yet</p></div>';
+    return;
+  }
+  const sorted = [...state.players].sort((a,b) => b.position - a.position);
+  el.innerHTML = sorted.map((p,i) => `
+    <div class="lb-row">
+      <div class="rank ${i===0?'r1':i===1?'r2':i===2?'r3':'r-n'}">${i+1}</div>
+      <div class="pdot" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
+      <div style="flex:1;">
+        <div class="lb-name">${escHtml(p.name)}</div>
+        <div class="prog-wrap"><div class="prog-bar" style="width:${p.position}%;background:${p.color};"></div></div>
+        <div class="lb-detail">${p.classes || 0} classes · ${p.points || 0} total pts</div>
+      </div>
+      <span class="badge ${p.position>=100?'b-orange':'b-blue'}">${p.position>=100?'🏆 Done!':p.position+'/100'}</span>
+    </div>`).join('');
+}
+
+function renderSnLDisplay() {
+  const el = document.getElementById('snlDisplay');
+  if (!state.snl || !Object.keys(state.snl).length) { el.innerHTML = '<p style="font-size:12px;color:var(--text2);">No data</p>'; return; }
+  el.innerHTML = Object.entries(state.snl).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([f,t]) =>
+    `<div class="snl-chip">${parseInt(t)>parseInt(f)?'🪜':'🐍'} <span>${f}→${t}</span></div>`).join('');
+}
+
+function renderRollHistory() {
+  const el = document.getElementById('rollHistory');
+  if (!state.rolls || !state.rolls.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🎲</div><p>No rolls yet — check back after the first weekly roll!</p></div>';
+    return;
+  }
+  const recent = [...state.rolls].reverse().slice(0, 5);
+  el.innerHTML = recent.map(r => `
+    <div class="roll-entry">
+      <div class="roll-week">Week ${r.week} &nbsp;·&nbsp; ${r.date}</div>
+      <div class="roll-dice">${FACES[r.dice[0]-1]} ${FACES[r.dice[1]-1]} <span style="font-size:13px;font-weight:700;color:var(--text2);">= ${r.total}</span></div>
+      <div class="roll-moves">${r.moves.filter(m=>m.spaces>0).map(m =>
+        `<span style="color:${m.color};font-weight:700;">${escHtml(m.name)}</span> moved +${m.spaces} → sq.${m.to}${m.special?' <em>('+escHtml(m.special)+')</em>':''}`
+      ).join('<br>')}</div>
+    </div>`).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// BOARD
+function sqNum(row,col) { const r=9-row; return r%2===0?r*10+col+1:r*10+(9-col)+1; }
+function getXY(num,cw,ch) { const n=num-1,row=Math.floor(n/10),col=row%2===0?n%10:9-(n%10); return {x:col*cw+cw/2,y:(9-row)*ch+ch/2}; }
+
+function drawBoard() {
+  const canvas = document.getElementById('boardCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height, cw=W/10, ch=H/10;
+  ctx.clearRect(0,0,W,H);
+
+  const SQCLR = ['#fff8f5','#f0fdf4','#eff6ff','#fefce8','#fdf4ff','#fff1f2'];
+  for (let row=0; row<10; row++) {
+    for (let col=0; col<10; col++) {
+      const num = sqNum(row,col);
+      const x=col*cw, y=row*ch;
+      ctx.fillStyle = SQCLR[num % SQCLR.length];
+      ctx.fillRect(x+0.5,y+0.5,cw-1,ch-1);
+      ctx.strokeStyle = 'rgba(0,0,0,0.07)'; ctx.lineWidth = 0.5;
+      ctx.strokeRect(x+0.5,y+0.5,cw-1,ch-1);
+      ctx.fillStyle = 'rgba(0,0,0,0.28)';
+      ctx.font = `bold ${cw*0.2}px Nunito,sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ctx.fillText(num, x+cw/2, y+4);
+    }
+  }
+
+  if (state.snl) {
+    Object.entries(state.snl).forEach(([from,to]) => {
+      const f=getXY(parseInt(from),cw,ch), t=getXY(parseInt(to),cw,ch), isL=parseInt(to)>parseInt(from);
+      ctx.beginPath(); ctx.moveTo(f.x,f.y); ctx.lineTo(t.x,t.y);
+      ctx.strokeStyle = isL ? '#15803d' : '#dc2626'; ctx.lineWidth = 2.5;
+      ctx.setLineDash(isL?[]:[5,3]); ctx.stroke(); ctx.setLineDash([]);
+      ctx.font = `${cw*0.26}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(isL?'🪜':'🐍', (f.x+t.x)/2, (f.y+t.y)/2);
+    });
+  }
+
+  if (state.players) {
+    state.players.forEach(p => {
+      if (!p.position) return;
+      const pos = getXY(p.position, cw, ch);
+      const same = state.players.filter(x => x.position===p.position && x.position>0);
+      const idx = same.indexOf(p);
+      const ox = idx*12-(same.length-1)*6;
+      ctx.beginPath(); ctx.arc(pos.x+ox,pos.y,cw*0.17,0,Math.PI*2);
+      ctx.fillStyle=p.color; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+      ctx.fillStyle='#fff';
+      ctx.font=`bold ${cw*0.15}px Nunito,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(p.name[0].toUpperCase(), pos.x+ox, pos.y);
+    });
+  }
+
+  ctx.font=`${cw*0.22}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const s=getXY(1,cw,ch), e=getXY(100,cw,ch);
+  ctx.fillText('🏁', s.x, s.y+ch*0.22);
+  ctx.fillText('🏆', e.x, e.y+ch*0.22);
+}
+
+// Auto-refresh every 60 seconds
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>

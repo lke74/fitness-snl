@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Fitness Snakes &amp; Ladders</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #e8541a; --orange-d: #c94e1e; --orange-l: #fff3ee;
+  --green: #15803d; --green-l: #f0fdf4;
+  --red: #dc2626; --red-l: #fef2f2;
+  --blue: #1d4ed8; --blue-l: #eff6ff;
+  --bg: #fffcf9; --bg2: #f5f0ea; --border: rgba(0,0,0,0.09);
+  --text: #1c1917; --text2: #78716c; --card: #ffffff; --r: 13px;
+}
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.topbar {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 0 24px; display: flex; align-items: center; gap: 14px;
+  height: 58px; position: sticky; top: 0; z-index: 50;
+}
+.topbar-logo { font-size: 24px; }
+.topbar-title { font-family: 'DM Serif Display', serif; font-size: 18px; flex: 1; }
+.admin-pill { padding: 4px 12px; background: var(--orange-l); color: var(--orange-d); border-radius: 20px; font-size: 12px; font-weight: 800; }
+.spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.topbar-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; color: var(--text2); transition: all 0.15s; text-decoration: none; }
+.topbar-btn:hover { background: var(--bg2); color: var(--text); }
+.topbar-btn.danger { color: var(--red); }
+#statusMsg { font-size: 12px; color: var(--text2); font-weight: 600; min-width: 100px; text-align: right; }
+
+.tabs { display: flex; gap: 4px; padding: 16px 24px 0; background: var(--bg); flex-wrap: wrap; }
+.tab { padding: 8px 16px; border-radius: 8px 8px 0 0; border: 1px solid transparent; border-bottom: none; background: transparent; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--text2); font-family: 'Nunito', sans-serif; transition: all 0.15s; }
+.tab.active { background: var(--card); border-color: var(--border); color: var(--text); }
+.tab:hover:not(.active) { color: var(--text); background: var(--bg2); }
+
+.content { padding: 0 24px 24px; border-top: 1px solid var(--border); background: var(--card); }
+.tab-content { display: none; padding-top: 20px; }
+.tab-content.active { display: block; }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap: 16px; }
+.card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; margin-bottom: 16px; }
+.card:last-child { margin-bottom: 0; }
+.card h3 { font-size: 13px; font-weight: 800; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+label { font-size: 12px; font-weight: 800; color: var(--text2); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+.fr { margin-bottom: 13px; }
+input[type=text],input[type=number],input[type=date],input[type=password],select,textarea {
+  width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 9px;
+  background: var(--card); color: var(--text); font-size: 13px; font-weight: 600;
+  font-family: 'Nunito', sans-serif; outline: none; transition: border-color 0.2s;
+}
+input:focus,select:focus,textarea:focus { border-color: var(--orange); }
+textarea { font-family: monospace; font-size: 12px; resize: vertical; }
+.btn { padding: 9px 18px; border-radius: 9px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Nunito', sans-serif; transition: all 0.15s; }
+.btn:hover { background: var(--bg2); }
+.btn-primary { background: var(--orange); color: #fff; border-color: var(--orange); }
+.btn-primary:hover { background: var(--orange-d); }
+.btn-green { background: var(--green); color: #fff; border-color: var(--green); }
+.btn-green:hover { background: #166534; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+.btn-danger { color: var(--red); border-color: transparent; background: transparent; }
+.row { display: flex; gap: 8px; align-items: center; }
+.w100 { width: 100%; }
+
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { font-size: 11px; font-weight: 800; color: var(--text2); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.05em; }
+td { padding: 9px 8px; border-bottom: 1px solid var(--border); font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+.scroll { max-height: 300px; overflow-y: auto; }
+
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.b-orange { background: var(--orange-l); color: var(--orange-d); }
+.b-green { background: var(--green-l); color: var(--green); }
+.b-blue { background: var(--blue-l); color: var(--blue); }
+.b-red { background: var(--red-l); color: var(--red); }
+.b-gray { background: var(--bg2); color: var(--text2); }
+
+.pdot { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.checkbox-row input[type=checkbox] { width: auto; cursor: pointer; }
+
+.die { width: 58px; height: 58px; background: var(--card); border: 2px solid var(--border); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.die.rolling { animation: roll 0.4s ease; }
+@keyframes roll { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-12deg)} 75%{transform:rotate(12deg)} }
+
+.alert { padding: 10px 14px; border-radius: 9px; font-size: 13px; margin-bottom: 12px; font-weight: 600; }
+.alert-orange { background: var(--orange-l); color: var(--orange-d); border: 1px solid #fed7aa; }
+.alert-green { background: var(--green-l); color: var(--green); border: 1px solid #bbf7d0; }
+.alert-blue { background: var(--blue-l); color: var(--blue); border: 1px solid #bfdbfe; }
+
+/* SAVE BANNER */
+#saveBanner {
+  position: fixed; bottom: 20px; right: 20px; z-index: 200;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  font-size: 13px; font-weight: 700; display: none; max-width: 320px;
+}
+#saveBanner.show { display: block; }
+
+/* BOARD */
+#boardCanvas { width: 100%; display: block; border-radius: 10px; }
+.snl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.snl-chip { display: flex; align-items: center; gap: 5px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">🐍🪜</span>
+  <span class="topbar-title">Admin Dashboard</span>
+  <div id="spinner" class="spinner"></div>
+  <span id="statusMsg"></span>
+  <span class="admin-pill">⚙️ Admin</span>
+  <a class="topbar-btn" href="index.html" target="_blank">👀 View public board</a>
+  <button class="topbar-btn danger" onclick="doLogout()">Sign out</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('board')">📋 Board</button>
+  <button class="tab" onclick="showTab('players')">👥 Players</button>
+  <button class="tab" onclick="showTab('attendance')">📋 Attendance</button>
+  <button class="tab" onclick="showTab('roll')">🎲 Weekly roll</button>
+  <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+  <button class="tab" onclick="showTab('export')">💾 Export / save</button>
+</div>
+
+<div class="content">
+
+  <!-- BOARD -->
+  <div class="tab-content active" id="tab-board">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+      <div class="card">
+        <h3>Live board preview</h3>
+        <canvas id="boardCanvas" width="520" height="520"></canvas>
+      </div>
+      <div>
+        <div class="card"><h3>Leaderboard</h3><div id="leaderboard"></div></div>
+        <div class="card"><h3>Snakes &amp; ladders</h3><div class="snl-grid" id="snlDisplay"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLAYERS -->
+  <div class="tab-content" id="tab-players">
+    <div class="grid2">
+      <div class="card">
+        <h3>Add player</h3>
+        <div class="fr"><label>Name</label><input type="text" id="playerName" placeholder="e.g. Sarah Johnson"></div>
+        <div class="fr"><label>Colour</label><div id="colorPicker" style="display:flex;gap:8px;flex-wrap:wrap;"></div></div>
+        <button class="btn btn-primary w100" onclick="addPlayer()">Add player</button>
+      </div>
+      <div class="card">
+        <h3>Bulk import</h3>
+        <div class="fr"><label>One name per line</label><textarea id="bulkNames" rows="6" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana"></textarea></div>
+        <button class="btn btn-green w100" onclick="bulkImport()">Import all</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>All players <span class="badge b-orange" id="playerCount" style="margin-left:6px;">0</span></h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Player</th><th>Position</th><th>Total pts</th><th>Classes</th><th>Week pts</th><th>Actions</th></tr></thead>
+        <tbody id="playerTable"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div class="tab-content" id="tab-attendance">
+    <div class="grid2">
+      <div class="card">
+        <h3>Log class attendance</h3>
+        <div class="fr"><label>Date</label><input type="date" id="attDate"></div>
+        <div class="fr"><label>Class type</label><select id="classType"></select></div>
+        <div class="fr"><label>Attendees (tick all who attended)</label>
+          <div id="attendeeBoxes" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--border);border-radius:9px;padding:10px;"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" style="flex:1;" onclick="logAttendance()">Log attendance</button>
+          <button class="btn btn-sm" onclick="selectAllAttendees()">All</button>
+          <button class="btn btn-sm" onclick="clearAllAttendees()">None</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>CSV bulk upload</h3>
+        <div class="alert alert-orange" style="font-size:12px;"><strong>Format:</strong> date,class_type,player_name<br>e.g. 2025-01-06,HIIT,Alice<br>2025-01-07,Yoga,Bob</div>
+        <div class="fr"><textarea id="csvData" rows="9" placeholder="date,class_type,player_name&#10;2025-01-06,HIIT,Alice&#10;2025-01-06,Yoga,Bob&#10;2025-01-07,Spin,Charlie"></textarea></div>
+        <button class="btn btn-green w100" onclick="importCSV()">Import CSV</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Attendance log</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Date</th><th>Class</th><th>Player</th><th>Points</th><th></th></tr></thead>
+        <tbody id="attendanceLog"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- ROLL -->
+  <div class="tab-content" id="tab-roll">
+    <div class="grid2">
+      <div class="card" style="text-align:center;">
+        <h3 style="text-align:center;">Weekly dice roll</h3>
+        <p style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px;">Each player's weekly class points scale how far they move. Zero points = no move this week.</p>
+        <div style="display:flex;gap:16px;justify-content:center;margin:20px 0;">
+          <div class="die" id="d1">?</div>
+          <div class="die" id="d2">?</div>
+        </div>
+        <div style="font-size:15px;color:var(--text2);font-weight:700;margin-bottom:18px;" id="rollSummary">Click Roll to move all players</div>
+        <button class="btn btn-primary w100" style="padding:14px;font-size:16px;" onclick="doWeeklyRoll()">🎲 Roll the dice!</button>
+        <button class="btn btn-sm w100" style="margin-top:10px;" onclick="resetWeek()">Reset this week's points only</button>
+      </div>
+      <div class="card"><h3>This week's points</h3><div id="weekResults"></div></div>
+    </div>
+    <div class="card">
+      <h3>Roll history</h3>
+      <div class="scroll"><table>
+        <thead><tr><th>Week</th><th>Date</th><th>Dice</th><th>Moves</th></tr></thead>
+        <tbody id="rollHistory"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tab-content" id="tab-settings">
+    <div class="grid2">
+      <div class="card">
+        <h3>Class types &amp; points</h3>
+        <div class="row fr">
+          <input type="text" id="newClassName" placeholder="Class name (e.g. HIIT)" style="flex:1;">
+          <input type="number" id="newClassPoints" value="2" min="1" max="10" style="width:75px;">
+          <button class="btn btn-primary btn-sm" onclick="addClass()">Add</button>
+        </div>
+        <div class="scroll"><table>
+          <thead><tr><th>Class</th><th>Points per session</th><th></th></tr></thead>
+          <tbody id="classTable"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Snakes &amp; ladders</h3>
+        <div class="row fr">
+          <input type="number" id="snlFrom" placeholder="From" min="1" max="99" style="width:68px;">
+          <span style="font-weight:700;color:var(--text2);">→</span>
+          <input type="number" id="snlTo" placeholder="To" min="2" max="100" style="width:68px;">
+          <select id="snlType" style="width:105px;"><option value="ladder">🪜 Ladder</option><option value="snake">🐍 Snake</option></select>
+          <button class="btn btn-primary btn-sm" onclick="addSnL()">Add</button>
+        </div>
+        <div style="max-height:220px;overflow-y:auto;"><table>
+          <thead><tr><th>From</th><th>Type</th><th>To</th><th></th></tr></thead>
+          <tbody id="snlTable"></tbody>
+        </table></div>
+        <button class="btn btn-sm w100" style="margin-top:10px;" onclick="resetSnL()">Reset to default layout</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Edit player position (manual correction)</h3>
+      <div class="row">
+        <select id="editPlayerSel" style="flex:1;"></select>
+        <input type="number" id="editPlayerPos" placeholder="New position (0-100)" min="0" max="100" style="width:180px;">
+        <button class="btn btn-primary btn-sm" onclick="setPlayerPosition()">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT / SAVE -->
+  <div class="tab-content" id="tab-export">
+    <div class="grid2">
+      <div class="card">
+        <h3>Save game state to file</h3>
+        <div class="alert alert-blue" style="font-size:13px;">
+          <strong>How to publish changes to the live board:</strong><br><br>
+          1. Click "Download gamestate.json" below<br>
+          2. Replace the file at <code>gamestate.json</code> in your GitHub repo<br>
+          3. Commit &amp; push — GitHub Actions will automatically redeploy<br>
+          4. The public board updates within ~1 minute
+        </div>
+        <button class="btn btn-primary w100" style="margin-bottom:10px;" onclick="downloadGamestate()">⬇️ Download gamestate.json</button>
+        <button class="btn btn-green w100" onclick="copyGamestateJSON()">📋 Copy JSON to clipboard</button>
+      </div>
+      <div class="card">
+        <h3>Import saved state</h3>
+        <div class="fr"><label>Paste previously exported JSON</label><textarea id="importJSON" rows="10" placeholder='{"players":[], "classes":[], ...}'></textarea></div>
+        <button class="btn btn-primary w100" onclick="importJSON()">Import &amp; apply</button>
+      </div>
+    </div>
+    <div class="card" style="border-color:#fecaca;">
+      <h3 style="color:var(--red);">Danger zone</h3>
+      <div class="row">
+        <button class="btn btn-sm btn-danger" onclick="clearPlayers()">Clear all players</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAttendance()">Clear attendance log</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAll()">Reset everything</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SAVE REMINDER BANNER -->
+<div id="saveBanner">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span style="font-size:20px;">💾</span>
+    <div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:3px;">Unsaved changes</div>
+      <div style="font-size:12px;color:var(--text2);font-weight:600;">Download gamestate.json and push to GitHub to publish.</div>
+    </div>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto;white-space:nowrap;" onclick="downloadGamestate()">Download</button>
+  </div>
+</div>
+
+<script>
+// ─── AUTH CHECK ───────────────────────────────────────────────
+(function() {
+  const t = sessionStorage.getItem('snl_admin_token');
+  if (!t) { window.location.href = 'admin-login.html'; }
+})();
+
+function doLogout() {
+  sessionStorage.removeItem('snl_admin_token');
+  sessionStorage.removeItem('snl_admin_token_check');
+  window.location.href = 'admin-login.html';
+}
+
+// ─── STATE ───────────────────────────────────────────────────
+const SK = 'snl_admin_state';
+const COLORS = ['#e85d26','#2563eb','#16a34a','#9333ea','#db2777','#0891b2','#ea580c','#4f46e5','#059669','#dc2626','#d97706','#0284c7'];
+const FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+const DEFAULT_SNL = {4:14,9:31,20:38,28:84,40:59,51:67,63:81,71:91,17:7,54:34,62:19,64:60,87:24,93:73,95:75,99:78};
+
+let selectedColor = COLORS[0];
+let unsaved = false;
+
+let state = {
+  players: [], attendance: [], rolls: [], currentWeek: 1, snl: {...DEFAULT_SNL},
+  classes: [
+    {id:'hiit',name:'HIIT',points:3}, {id:'yoga',name:'Yoga',points:1},
+    {id:'spin',name:'Spin',points:2}, {id:'strength',name:'Strength',points:2},
+    {id:'boxing',name:'Boxing',points:3}, {id:'pilates',name:'Pilates',points:2}
+  ],
+  lastUpdated: ''
+};
+
+// Load from localStorage (admin session persistence)
+function loadLocalState() {
+  try {
+    const d = localStorage.getItem(SK);
+    if (d) { const p = JSON.parse(d); state = {...state, ...p}; if (!state.snl || !Object.keys(state.snl).length) state.snl = {...DEFAULT_SNL}; }
+  } catch(e) {}
+}
+function saveLocalState() {
+  try { localStorage.setItem(SK, JSON.stringify(state)); } catch(e) {}
+  markUnsaved();
+}
+
+function markUnsaved() { unsaved = true; document.getElementById('saveBanner').classList.add('show'); }
+function clearUnsaved() { unsaved = false; document.getElementById('saveBanner').classList.remove('show'); }
+
+function setStatus(msg, err) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg; el.style.color = err ? '#dc2626' : '#78716c';
+  if (msg) setTimeout(() => { if(el.textContent===msg) el.textContent=''; }, 3500);
+}
+function showSpinner(v) { document.getElementById('spinner').style.display = v ? 'inline-block' : 'none'; }
+
+// Load published state from GitHub Pages on first load
+async function loadPublishedState() {
+  showSpinner(true);
+  try {
+    const res = await fetch('gamestate.json?t=' + Date.now());
+    if (res.ok) {
+      const published = await res.json();
+      // Merge: prefer local if it's newer
+      const localState = localStorage.getItem(SK);
+      if (localState) {
+        const local = JSON.parse(localState);
+        const localDate = new Date(local.lastUpdated || 0);
+        const pubDate = new Date(published.lastUpdated || 0);
+        if (localDate > pubDate) {
+          setStatus('Using local (newer than published)');
+        } else {
+          state = {...state, ...published};
+          if (!state.snl || !Object.keys(state.snl).length) state.snl = {...DEFAULT_SNL};
+          localStorage.setItem(SK, JSON.stringify(state));
+          setStatus('Loaded from published board');
+        }
+      } else {
+        state = {...state, ...published};
+        if (!state.snl || !Object.keys(state.snl).length) state.snl = {...DEFAULT_SNL};
+        localStorage.setItem(SK, JSON.stringify(state));
+        setStatus('Loaded from published board');
+      }
+    }
+  } catch(e) {
+    setStatus('Could not load published state — using local');
+  }
+  showSpinner(false);
+  renderAll();
+}
+
+// ─── TABS ────────────────────────────────────────────────────
+function showTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const tabEls = document.querySelectorAll('.tab');
+  const tabNames = ['board','players','attendance','roll','settings','export'];
+  const idx = tabNames.indexOf(id);
+  if (tabEls[idx]) tabEls[idx].classList.add('active');
+  if (id === 'board') drawBoard();
+}
+
+function renderAll() {
+  renderColorPicker(); renderClassDropdown(); renderAttendeeBoxes(); renderEditPlayerSelect();
+  renderPlayerTable(); renderClassTable(); renderSnLTable(); renderSnLDisplay();
+  renderLeaderboard(); renderAttendanceLog(); renderWeekResults(); renderRollHistory();
+  drawBoard();
+}
+
+// ─── COLOR PICKER ────────────────────────────────────────────
+function renderColorPicker() {
+  document.getElementById('colorPicker').innerHTML = COLORS.map(c =>
+    `<div onclick="selectColor('${c}')" style="width:26px;height:26px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===selectedColor?'#1c1917':'transparent'};transition:border 0.1s;"></div>`).join('');
+}
+function selectColor(c) { selectedColor = c; renderColorPicker(); }
+
+// ─── PLAYERS ─────────────────────────────────────────────────
+function addPlayer() {
+  const name = document.getElementById('playerName').value.trim();
+  if (!name) return alert('Enter a name');
+  if (state.players.find(p => p.name.toLowerCase() === name.toLowerCase())) return alert('Player already exists');
+  state.players.push({ id: Date.now(), name, color: selectedColor, position: 0, points: 0, weekPoints: 0, classes: 0 });
+  document.getElementById('playerName').value = '';
+  const idx = COLORS.indexOf(selectedColor); selectedColor = COLORS[(idx+1) % COLORS.length];
+  saveLocalState(); renderAll();
+}
+
+function bulkImport() {
+  const text = document.getElementById('bulkNames').value.trim(); if (!text) return;
+  text.split(/[\n,]+/).map(n => n.trim()).filter(Boolean).forEach((name, i) => {
+    if (!state.players.find(p => p.name.toLowerCase() === name.toLowerCase()))
+      state.players.push({ id: Date.now()+i, name, color: COLORS[state.players.length % COLORS.length], position:0, points:0, weekPoints:0, classes:0 });
+  });
+  document.getElementById('bulkNames').value = '';
+  saveLocalState(); renderAll();
+}
+
+function removePlayer(id) {
+  if (!confirm('Remove this player?')) return;
+  state.players = state.players.filter(p => p.id !== id);
+  state.attendance = state.attendance.filter(a => a.playerId !== id);
+  saveLocalState(); renderAll();
+}
+
+function setPlayerPosition() {
+  const sel = document.getElementById('editPlayerSel');
+  const pos = parseInt(document.getElementById('editPlayerPos').value);
+  const id = parseInt(sel.value);
+  if (!id || isNaN(pos) || pos < 0 || pos > 100) return alert('Select a player and enter a valid position (0–100)');
+  const p = state.players.find(x => x.id === id);
+  if (p) { p.position = pos; saveLocalState(); renderAll(); setStatus('Position updated'); }
+}
+
+function renderPlayerTable() {
+  document.getElementById('playerCount').textContent = state.players.length;
+  const sorted = [...state.players].sort((a,b) => b.position - a.position);
+  document.getElementById('playerTable').innerHTML = sorted.map(p => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:8px;">
+        <div class="pdot" style="background:${p.color}">${p.name[0].toUpperCase()}</div>${escHtml(p.name)}</div></td>
+      <td>${p.position}/100</td><td>${p.points}</td><td>${p.classes}</td>
+      <td><span class="badge ${(p.weekPoints||0)>0?'b-green':'b-gray'}">${p.weekPoints||0}</span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="removePlayer(${p.id})">Remove</button></td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text2);padding:20px;">No players yet — add some above</td></tr>';
+}
+
+function renderEditPlayerSelect() {
+  document.getElementById('editPlayerSel').innerHTML = '<option value="">Select player…</option>' +
+    state.players.map(p => `<option value="${p.id}">${escHtml(p.name)} (sq.${p.position})</option>`).join('');
+}
+
+// ─── CLASSES ─────────────────────────────────────────────────
+function addClass() {
+  const name = document.getElementById('newClassName').value.trim();
+  const pts = parseInt(document.getElementById('newClassPoints').value) || 2;
+  if (!name) return;
+  if (!state.classes.find(c => c.name.toLowerCase() === name.toLowerCase()))
+    state.classes.push({ id: name.toLowerCase().replace(/\s+/g,'-') + Date.now(), name, points: pts });
+  document.getElementById('newClassName').value = '';
+  saveLocalState(); renderAll();
+}
+function removeClass(id) {
+  state.classes = state.classes.filter(c => c.id !== id);
+  saveLocalState(); renderAll();
+}
+function renderClassTable() {
+  document.getElementById('classTable').innerHTML = state.classes.map(c =>
+    `<tr><td>${escHtml(c.name)}</td><td>${c.points} pt${c.points>1?'s':''}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="removeClass('${c.id}')">Remove</button></td></tr>`).join('');
+}
+function renderClassDropdown() {
+  document.getElementById('classType').innerHTML = state.classes.map(c =>
+    `<option value="${c.id}">${escHtml(c.name)} (${c.points} pts)</option>`).join('');
+}
+
+// ─── ATTENDANCE ──────────────────────────────────────────────
+function renderAttendeeBoxes() {
+  document.getElementById('attendeeBoxes').innerHTML = state.players.length
+    ? state.players.map(p => `<label class="checkbox-row"><input type="checkbox" value="${p.id}">
+        <div class="pdot" style="background:${p.color};width:20px;height:20px;font-size:10px;">${p.name[0].toUpperCase()}</div>
+        ${escHtml(p.name)}</label>`).join('')
+    : '<p style="font-size:12px;color:var(--text2);">Add players first</p>';
+}
+function selectAllAttendees() { document.querySelectorAll('#attendeeBoxes input').forEach(el => el.checked=true); }
+function clearAllAttendees() { document.querySelectorAll('#attendeeBoxes input').forEach(el => el.checked=false); }
+
+function logAttendance() {
+  const date = document.getElementById('attDate').value;
+  const classId = document.getElementById('classType').value;
+  const cls = state.classes.find(c => c.id === classId);
+  if (!date || !cls) return alert('Select date and class type');
+  const checked = [...document.querySelectorAll('#attendeeBoxes input:checked')].map(el => parseInt(el.value));
+  if (!checked.length) return alert('Select at least one attendee');
+  let added = 0;
+  checked.forEach(pid => {
+    const p = state.players.find(x => x.id === pid);
+    if (p && !state.attendance.find(a => a.date===date && a.classId===classId && a.playerId===pid)) {
+      state.attendance.push({ date, classId, className: cls.name, playerId: pid, playerName: p.name, points: cls.points });
+      p.points += cls.points; p.weekPoints = (p.weekPoints||0) + cls.points; p.classes = (p.classes||0)+1; added++;
+    }
+  });
+  if (!added) { setStatus('No new records (duplicates skipped)'); return; }
+  clearAllAttendees();
+  saveLocalState(); renderAll(); setStatus(`Logged ${added} attendance record${added>1?'s':''}`);
+}
+
+function importCSV() {
+  const text = document.getElementById('csvData').value.trim(); if (!text) return;
+  let count = 0;
+  text.split('\n').filter(l => l && !l.startsWith('date,')).forEach(line => {
+    const parts = line.split(',').map(s => s && s.trim());
+    const [date, className, playerName] = parts;
+    if (!date || !className || !playerName) return;
+    const cls = state.classes.find(c => c.name.toLowerCase() === className.toLowerCase());
+    const player = state.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    if (cls && player && !state.attendance.find(a => a.date===date && a.classId===cls.id && a.playerId===player.id)) {
+      state.attendance.push({ date, classId:cls.id, className:cls.name, playerId:player.id, playerName:player.name, points:cls.points });
+      player.points += cls.points; player.weekPoints = (player.weekPoints||0)+cls.points; player.classes=(player.classes||0)+1; count++;
+    }
+  });
+  document.getElementById('csvData').value = '';
+  saveLocalState(); renderAll();
+  setStatus(count ? `Imported ${count} records` : 'No new records (duplicates skipped)');
+}
+
+function removeAttendance(idx) {
+  const record = state.attendance[idx];
+  if (!record) return;
+  const player = state.players.find(p => p.id === record.playerId);
+  if (player) { player.points -= record.points; player.weekPoints = Math.max(0,(player.weekPoints||0)-record.points); player.classes = Math.max(0,(player.classes||0)-1); }
+  state.attendance.splice(idx, 1);
+  saveLocalState(); renderAll();
+}
+
+function renderAttendanceLog() {
+  const sorted = state.attendance.map((a,i)=>({...a,_i:i})).sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('attendanceLog').innerHTML = sorted.map(a =>
+    `<tr><td>${a.date}</td><td><span class="badge b-blue">${escHtml(a.className)}</span></td>
+    <td>${escHtml(a.playerName)}</td><td>+${a.points} pts</td>
+    <td><button class="btn btn-sm btn-danger" onclick="removeAttendance(${a._i})">✕</button></td></tr>`).join('')
+    || '<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px;">No attendance logged yet</td></tr>';
+}
+
+// ─── SNAKES & LADDERS ────────────────────────────────────────
+function addSnL() {
+  const from = parseInt(document.getElementById('snlFrom').value);
+  const to = parseInt(document.getElementById('snlTo').value);
+  const type = document.getElementById('snlType').value;
+  if (!from||!to||from<1||from>99||to<2||to>100) return alert('Invalid squares (From 1-99, To 2-100)');
+  if (type==='ladder' && to<=from) return alert('A ladder must go UP (To > From)');
+  if (type==='snake' && to>=from) return alert('A snake must go DOWN (To < From)');
+  state.snl[from] = to;
+  saveLocalState(); renderAll();
+}
+function removeSnL(from) { delete state.snl[from]; saveLocalState(); renderAll(); }
+function resetSnL() { if (confirm('Reset to default snake and ladder layout?')) { state.snl = {...DEFAULT_SNL}; saveLocalState(); renderAll(); } }
+function renderSnLTable() {
+  document.getElementById('snlTable').innerHTML = Object.entries(state.snl).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([f,t]) =>
+    `<tr><td>${f}</td><td><span class="badge ${parseInt(t)>parseInt(f)?'b-green':'b-red'}">${parseInt(t)>parseInt(f)?'🪜 Ladder':'🐍 Snake'}</span></td><td>${t}</td>
+    <td><button class="btn btn-sm btn-danger" onclick="removeSnL(${f})">✕</button></td></tr>`).join('');
+}
+function renderSnLDisplay() {
+  document.getElementById('snlDisplay').innerHTML = Object.entries(state.snl).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([f,t]) =>
+    `<div class="snl-chip">${parseInt(t)>parseInt(f)?'🪜':'🐍'} <span>${f}→${t}</span></div>`).join('');
+}
+
+// ─── WEEKLY ROLL ──────────────────────────────────────────────
+function doWeeklyRoll() {
+  if (!state.players.length) return alert('Add players first');
+  if (!confirm('Roll the dice and move all players? This will also reset this week\'s points.')) return;
+  const d1=Math.ceil(Math.random()*6), d2=Math.ceil(Math.random()*6), total=d1+d2;
+  const el1=document.getElementById('d1'), el2=document.getElementById('d2');
+  el1.textContent=FACES[d1-1]; el2.textContent=FACES[d2-1];
+  el1.classList.add('rolling'); el2.classList.add('rolling');
+  setTimeout(()=>{ el1.classList.remove('rolling'); el2.classList.remove('rolling'); }, 400);
+  document.getElementById('rollSummary').textContent = `${d1} + ${d2} = ${total}`;
+  const moves = [];
+  state.players.forEach(p => {
+    const wpts = p.weekPoints || 0;
+    const spaces = wpts > 0 ? Math.max(1, Math.round(total * (1 + wpts/10))) : 0;
+    const oldPos = p.position;
+    let newPos = Math.min(100, p.position + spaces);
+    let special = null;
+    if (state.snl[newPos]) {
+      const dest = parseInt(state.snl[newPos]);
+      special = dest > newPos ? `🪜 Ladder to ${dest}` : `🐍 Snake to ${dest}`;
+      newPos = dest;
+    }
+    if (newPos >= 100) { newPos = 100; special = (special ? special + ' + ' : '') + '🏆 Winner!'; }
+    p.position = newPos;
+    moves.push({ name:p.name, color:p.color, from:oldPos, spaces, to:newPos, special, pts:wpts });
+  });
+  state.rolls.push({ week:state.currentWeek, date:new Date().toISOString().split('T')[0], dice:[d1,d2], total, moves:[...moves] });
+  state.currentWeek++;
+  state.players.forEach(p => p.weekPoints = 0);
+  saveLocalState(); renderAll();
+  setStatus('Dice rolled! Download gamestate.json to publish.');
+}
+
+function resetWeek() {
+  if (!confirm('Reset this week\'s points for all players? Their positions will not change.')) return;
+  state.players.forEach(p => p.weekPoints = 0);
+  saveLocalState(); renderWeekResults(); setStatus('Week points reset');
+}
+
+function renderWeekResults() {
+  const sorted = [...state.players].sort((a,b)=>(b.weekPoints||0)-(a.weekPoints||0));
+  document.getElementById('weekResults').innerHTML = sorted.length
+    ? sorted.map(p => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;">
+        <div class="pdot" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
+        <div style="flex:1;font-size:13px;font-weight:700;">${escHtml(p.name)}</div>
+        <span class="badge ${(p.weekPoints||0)>0?'b-green':'b-gray'}">${p.weekPoints||0} pts</span>
+      </div>`).join('')
+    : '<p style="font-size:13px;color:var(--text2);">No players yet</p>';
+}
+function renderRollHistory() {
+  document.getElementById('rollHistory').innerHTML = [...state.rolls].reverse().map(r =>
+    `<tr><td>Wk ${r.week}</td><td>${r.date}</td><td>${r.dice[0]}+${r.dice[1]}=${r.total}</td>
+    <td style="font-size:12px;">${r.moves.map(m=>`${escHtml(m.name)}: +${m.spaces}→${m.to}${m.special?' ('+m.special+')':''}`).join(', ')}</td></tr>`).join('')
+    || '<tr><td colspan="4" style="text-align:center;color:var(--text2);padding:16px;">No rolls yet</td></tr>';
+}
+
+// ─── LEADERBOARD ──────────────────────────────────────────────
+function renderLeaderboard() {
+  const sorted = [...state.players].sort((a,b) => b.position - a.position);
+  const rankCls = ['r1','r2','r3'];
+  document.getElementById('leaderboard').innerHTML = sorted.length
+    ? sorted.map((p,i) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div style="width:24px;height:24px;border-radius:50%;background:${['#fbbf24','#94a3b8','#c97c3a','#e5e7eb'][Math.min(i,3)]};color:${i<3?'#fff':'#6b7280'};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;">${i+1}</div>
+        <div class="pdot" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
+        <span style="flex:1;font-size:13px;font-weight:700;">${escHtml(p.name)}</span>
+        <span class="badge ${p.position>=100?'b-orange':'b-blue'}">${p.position>=100?'🏆 Done!':p.position+'/100'}</span>
+      </div>`).join('')
+    : '<p style="font-size:13px;color:var(--text2);">No players yet</p>';
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────
+function getGamestateJSON() {
+  state.lastUpdated = new Date().toISOString();
+  return JSON.stringify(state, null, 2);
+}
+function downloadGamestate() {
+  const json = getGamestateJSON();
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'gamestate.json'; a.click();
+  clearUnsaved(); setStatus('Downloaded! Push gamestate.json to GitHub to publish.');
+}
+function copyGamestateJSON() {
+  navigator.clipboard.writeText(getGamestateJSON()).then(() => setStatus('Copied to clipboard!'));
+}
+function importJSON() {
+  const text = document.getElementById('importJSON').value.trim();
+  if (!text) return;
+  try {
+    const parsed = JSON.parse(text);
+    state = { ...state, ...parsed };
+    if (!state.snl || !Object.keys(state.snl).length) state.snl = {...DEFAULT_SNL};
+    saveLocalState(); renderAll();
+    document.getElementById('importJSON').value = '';
+    setStatus('State imported successfully');
+  } catch(e) { alert('Invalid JSON: ' + e.message); }
+}
+function clearPlayers() { if(!confirm('Remove all players?'))return; state.players=[]; state.attendance=[]; saveLocalState(); renderAll(); }
+function clearAttendance() { if(!confirm('Clear all attendance records?'))return; state.attendance=[]; state.players.forEach(p=>{p.points=0;p.weekPoints=0;p.classes=0;}); saveLocalState(); renderAll(); }
+function clearAll() {
+  if(!confirm('Reset EVERYTHING? This cannot be undone.'))return;
+  state = { players:[], attendance:[], rolls:[], currentWeek:1, snl:{...DEFAULT_SNL}, classes:state.classes, lastUpdated:'' };
+  saveLocalState(); renderAll();
+}
+
+// ─── BOARD ───────────────────────────────────────────────────
+function sqNum(row,col) { const r=9-row; return r%2===0?r*10+col+1:r*10+(9-col)+1; }
+function getXY(num,cw,ch) { const n=num-1,row=Math.floor(n/10),col=row%2===0?n%10:9-(n%10); return{x:col*cw+cw/2,y:(9-row)*ch+ch/2}; }
+function drawBoard() {
+  const canvas=document.getElementById('boardCanvas'); if(!canvas)return;
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height, cw=W/10, ch=H/10;
+  ctx.clearRect(0,0,W,H);
+  const SQCLR=['#fff8f5','#f0fdf4','#eff6ff','#fefce8','#fdf4ff','#fff1f2'];
+  for(let row=0;row<10;row++) for(let col=0;col<10;col++) {
+    const num=sqNum(row,col), x=col*cw, y=row*ch;
+    ctx.fillStyle=SQCLR[num%SQCLR.length]; ctx.fillRect(x+.5,y+.5,cw-1,ch-1);
+    ctx.strokeStyle='rgba(0,0,0,0.07)'; ctx.lineWidth=.5; ctx.strokeRect(x+.5,y+.5,cw-1,ch-1);
+    ctx.fillStyle='rgba(0,0,0,0.28)'; ctx.font=`bold ${cw*.2}px Nunito,sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(num,x+cw/2,y+4);
+  }
+  Object.entries(state.snl).forEach(([from,to])=>{
+    const f=getXY(parseInt(from),cw,ch),t=getXY(parseInt(to),cw,ch),isL=parseInt(to)>parseInt(from);
+    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(t.x,t.y);
+    ctx.strokeStyle=isL?'#15803d':'#dc2626';ctx.lineWidth=2.5;ctx.setLineDash(isL?[]:[5,3]);ctx.stroke();ctx.setLineDash([]);
+    ctx.font=`${cw*.26}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(isL?'🪜':'🐍',(f.x+t.x)/2,(f.y+t.y)/2);
+  });
+  state.players.forEach(p=>{
+    if(!p.position)return;
+    const pos=getXY(p.position,cw,ch);
+    const same=state.players.filter(x=>x.position===p.position&&x.position>0);
+    const idx=same.indexOf(p), ox=idx*12-(same.length-1)*6;
+    ctx.beginPath();ctx.arc(pos.x+ox,pos.y,cw*.17,0,Math.PI*2);
+    ctx.fillStyle=p.color;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font=`bold ${cw*.15}px Nunito,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(p.name[0].toUpperCase(),pos.x+ox,pos.y);
+  });
+  ctx.font=`${cw*.22}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+  const s=getXY(1,cw,ch),e=getXY(100,cw,ch);ctx.fillText('🏁',s.x,s.y+ch*.22);ctx.fillText('🏆',e.x,e.y+ch*.22);
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── INIT ─────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  loadLocalState();
+  document.getElementById('attDate').value = new Date().toISOString().split('T')[0];
+  renderColorPicker();
+  renderAll();
+  loadPublishedState();
+});
+</script>
+</body>
+</html>
